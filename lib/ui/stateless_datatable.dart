@@ -58,6 +58,7 @@ class StatelessDataTable extends StatelessWidget {
     this.firstRowIndex = 0,
     this.onPageChanged,
     this.shrinkWrap = false,
+    this.showCheckboxColumn = true,
     this.selectedActions,
     this.rowCountApproximate = false,
     this.rowsPerPage = defaultRowsPerPage,
@@ -115,6 +116,11 @@ class StatelessDataTable extends StatelessWidget {
   final List<DataRow> rows;
 
   final bool shrinkWrap;
+
+  /// Whether the widget should display checkboxes for selectable rows.
+  ///
+  /// See [DataTable.showCheckboxColumn]
+  final bool showCheckboxColumn;
 
   /// The current primary sort key's column.
   ///
@@ -271,207 +277,210 @@ class StatelessDataTable extends StatelessWidget {
     }
 
     // FOOTER
-    final TextStyle footerTextStyle = themeData.textTheme.caption;
-    final List<Widget> footerWidgets = <Widget>[];
-    if (onRowsPerPageChanged != null) {
-      final List<Widget> _footerChildren = availableRowsPerPage
-          .where((int value) => value <= rows.length || value == rowsPerPage)
-          .map<DropdownMenuItem<int>>((int value) {
-        return DropdownMenuItem<int>(value: value, child: Text('$value'));
-      }).toList();
-      footerWidgets.addAll(<Widget>[
-        Container(
-            width:
-                14.0), // to match trailing padding in case we overflow and end up scrolling
-        Text(localizations.rowsPerPageTitle),
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-              minWidth: 64.0), // 40.0 for the text, 24.0 for the icon
-          child: Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                items: _footerChildren,
-                value: rowsPerPage,
-                onChanged: onRowsPerPageChanged,
-                style: footerTextStyle,
-                iconSize: 24.0,
-              ),
-            ),
-          ),
-        ),
-      ]);
-    }
-    footerWidgets.addAll(<Widget>[
-      Container(width: 32.0),
-      Text(localizations.pageRowsInfoTitle(firstRowIndex + 1,
-          firstRowIndex + rowsPerPage, rows.length, rowCountApproximate)),
-      Container(width: 32.0),
-      IconButton(
-          icon: const Icon(Icons.chevron_left),
-          padding: EdgeInsets.zero,
-          tooltip: localizations.previousPageTooltip,
-          onPressed: firstRowIndex <= 0 ? null : handlePrevious),
-      Container(width: 24.0),
-      IconButton(
-          icon: const Icon(Icons.chevron_right),
-          padding: EdgeInsets.zero,
-          tooltip: localizations.nextPageTooltip,
-          onPressed: (!rowCountApproximate &&
-                  (firstRowIndex + rowsPerPage >= rows.length))
-              ? null
-              : handleNext),
-      Container(width: 14.0),
-    ]);
-
-    if (shrinkWrap) {
-      return SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Semantics(
-              container: true,
-              child: DefaultTextStyle(
-                // These typographic styles aren't quite the regular ones. We pick the closest ones from the regular
-                // list and then tweak them appropriately.
-                // See https://material.io/design/components/data-tables.html#tables-within-cards
-                style: _selectedRowCount > 0
-                    ? themeData.textTheme.subhead
-                        .copyWith(color: themeData.accentColor)
-                    : themeData.textTheme.title
-                        .copyWith(fontWeight: FontWeight.w400),
-                child: IconTheme.merge(
-                  data: const IconThemeData(opacity: 0.54),
-                  child: ButtonTheme.bar(
-                    child: Ink(
-                      height: 64.0,
-                      color: _selectedRowCount > 0
-                          ? themeData.secondaryHeaderColor
-                          : null,
-                      child: Padding(
-                        padding: EdgeInsetsDirectional.only(
-                            start: startPadding, end: 14.0),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: headerWidgets),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              dragStartBehavior: dragStartBehavior,
-              child: Builder(
-                builder: (BuildContext context) {
-                  final rows = _getRows(firstRowIndex, rowsPerPage);
-                  return DataTable(
-                    key: _tableKey,
-                    columns: columns,
-                    sortColumnIndex: sortColumnIndex,
-                    sortAscending: sortAscending,
-                    onSelectAll: onSelectAll,
-                    rows: rows,
-                  );
-                },
-              ),
-            ),
-            DefaultTextStyle(
-              style: footerTextStyle,
-              child: IconTheme.merge(
-                data: const IconThemeData(opacity: 0.54),
-                child: Container(
-                  height: 56.0,
-                  child: SingleChildScrollView(
-                    dragStartBehavior: dragStartBehavior,
-                    scrollDirection: Axis.horizontal,
-                    reverse: true,
-                    child: Row(
-                      children: footerWidgets,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // CARD
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Semantics(
-            container: true,
-            child: DefaultTextStyle(
-              // These typographic styles aren't quite the regular ones. We pick the closest ones from the regular
-              // list and then tweak them appropriately.
-              // See https://material.io/design/components/data-tables.html#tables-within-cards
-              style: _selectedRowCount > 0
-                  ? themeData.textTheme.subhead
-                      .copyWith(color: themeData.accentColor)
-                  : themeData.textTheme.title
-                      .copyWith(fontWeight: FontWeight.w400),
-              child: IconTheme.merge(
-                data: const IconThemeData(opacity: 0.54),
-                child: ButtonTheme.bar(
-                  child: Ink(
-                    height: 64.0,
-                    color: _selectedRowCount > 0
-                        ? themeData.secondaryHeaderColor
-                        : null,
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.only(
-                          start: startPadding, end: 14.0),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: headerWidgets),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-              flex: 8,
-              child: Scrollbar(
-                  child: ListView(
-                shrinkWrap: true,
-                children: <Widget>[
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                        key: _tableKey,
-                        columns: columns,
-                        sortColumnIndex: sortColumnIndex,
-                        sortAscending: sortAscending,
-                        onSelectAll: onSelectAll,
-                        rows: _getRows(firstRowIndex, rowsPerPage)),
-                  ),
-                ],
-              ))),
-          DefaultTextStyle(
-            style: footerTextStyle,
-            child: IconTheme.merge(
-              data: const IconThemeData(opacity: 0.54),
-              child: Container(
-                height: 56.0,
-                child: SingleChildScrollView(
-                  dragStartBehavior: dragStartBehavior,
-                  scrollDirection: Axis.horizontal,
-                  reverse: true,
-                  child: Row(
-                    children: footerWidgets,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // final TextStyle footerTextStyle = themeData.textTheme.caption;
+    // final List<Widget> footerWidgets = <Widget>[];
+    // if (onRowsPerPageChanged != null) {
+    //   final List<Widget> _footerChildren = availableRowsPerPage
+    //       .where((int value) => value <= rows.length || value == rowsPerPage)
+    //       .map<DropdownMenuItem<int>>((int value) {
+    //     return DropdownMenuItem<int>(value: value, child: Text('$value'));
+    //   }).toList();
+    //   footerWidgets.addAll(<Widget>[
+    //     Container(
+    //         width:
+    //             14.0), // to match trailing padding in case we overflow and end up scrolling
+    //     Text(localizations.rowsPerPageTitle),
+    //     ConstrainedBox(
+    //       constraints: const BoxConstraints(
+    //           minWidth: 64.0), // 40.0 for the text, 24.0 for the icon
+    //       child: Align(
+    //         alignment: AlignmentDirectional.centerEnd,
+    //         child: DropdownButtonHideUnderline(
+    //           child: DropdownButton<int>(
+    //             items: _footerChildren,
+    //             value: rowsPerPage,
+    //             onChanged: onRowsPerPageChanged,
+    //             style: footerTextStyle,
+    //             iconSize: 24.0,
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    //   ]);
+    // }
+    // footerWidgets.addAll(<Widget>[
+    //   Container(width: 32.0),
+    //   Text(localizations.pageRowsInfoTitle(firstRowIndex + 1,
+    //       firstRowIndex + rowsPerPage, rows.length, rowCountApproximate)),
+    //   Container(width: 32.0),
+    //   IconButton(
+    //       icon: const Icon(Icons.chevron_left),
+    //       padding: EdgeInsets.zero,
+    //       tooltip: localizations.previousPageTooltip,
+    //       onPressed: firstRowIndex <= 0 ? null : handlePrevious),
+    //   Container(width: 24.0),
+    //   IconButton(
+    //       icon: const Icon(Icons.chevron_right),
+    //       padding: EdgeInsets.zero,
+    //       tooltip: localizations.nextPageTooltip,
+    //       onPressed: (!rowCountApproximate &&
+    //               (firstRowIndex + rowsPerPage >= rows.length))
+    //           ? null
+    //           : handleNext),
+    //   Container(width: 14.0),
+    // ]);
+    //
+    // if (shrinkWrap) {
+    //   return SafeArea(
+    //     child: Column(
+    //       crossAxisAlignment: CrossAxisAlignment.stretch,
+    //       children: <Widget>[
+    //         Semantics(
+    //           container: true,
+    //           child: DefaultTextStyle(
+    //             // These typographic styles aren't quite the regular ones. We pick the closest ones from the regular
+    //             // list and then tweak them appropriately.
+    //             // See https://material.io/design/components/data-tables.html#tables-within-cards
+    //             style: _selectedRowCount > 0
+    //                 ? themeData.textTheme.subhead
+    //                     .copyWith(color: themeData.accentColor)
+    //                 : themeData.textTheme.title
+    //                     .copyWith(fontWeight: FontWeight.w400),
+    //             child: IconTheme.merge(
+    //               data: const IconThemeData(opacity: 0.54),
+    //               child: ButtonTheme.bar(
+    //                 child: Ink(
+    //                   height: 64.0,
+    //                   color: _selectedRowCount > 0
+    //                       ? themeData.secondaryHeaderColor
+    //                       : null,
+    //                   child: Padding(
+    //                     padding: EdgeInsetsDirectional.only(
+    //                         start: startPadding, end: 14.0),
+    //                     child: Row(
+    //                         mainAxisAlignment: MainAxisAlignment.end,
+    //                         children: headerWidgets),
+    //                   ),
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //         SingleChildScrollView(
+    //           scrollDirection: Axis.horizontal,
+    //           dragStartBehavior: dragStartBehavior,
+    //           child: Builder(
+    //             builder: (BuildContext context) {
+    //               final rows = _getRows(firstRowIndex, rowsPerPage);
+    //               return DataTable(
+    //                 key: _tableKey,
+    //                 columns: columns,
+    //                 sortColumnIndex: sortColumnIndex,
+    //                 sortAscending: sortAscending,
+    //                 onSelectAll: onSelectAll,
+    //                 rows: rows,
+    //                 showCheckboxColumn: showCheckboxColumn,
+    //               );
+    //             },
+    //           ),
+    //         ),
+    //         DefaultTextStyle(
+    //           style: footerTextStyle,
+    //           child: IconTheme.merge(
+    //             data: const IconThemeData(opacity: 0.54),
+    //             child: Container(
+    //               height: 56.0,
+    //               child: SingleChildScrollView(
+    //                 dragStartBehavior: dragStartBehavior,
+    //                 scrollDirection: Axis.horizontal,
+    //                 reverse: true,
+    //                 child: Row(
+    //                   children: footerWidgets,
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   );
+    // }
+    //
+    // // CARD
+    // return SafeArea(
+    //   child: Column(
+    //     crossAxisAlignment: CrossAxisAlignment.stretch,
+    //     children: <Widget>[
+    //       Semantics(
+    //         container: true,
+    //         child: DefaultTextStyle(
+    //           // These typographic styles aren't quite the regular ones. We pick the closest ones from the regular
+    //           // list and then tweak them appropriately.
+    //           // See https://material.io/design/components/data-tables.html#tables-within-cards
+    //           style: _selectedRowCount > 0
+    //               ? themeData.textTheme.subhead
+    //                   .copyWith(color: themeData.accentColor)
+    //               : themeData.textTheme.title
+    //                   .copyWith(fontWeight: FontWeight.w400),
+    //           child: IconTheme.merge(
+    //             data: const IconThemeData(opacity: 0.54),
+    //             child: ButtonTheme.bar(
+    //               child: Ink(
+    //                 height: 64.0,
+    //                 color: _selectedRowCount > 0
+    //                     ? themeData.secondaryHeaderColor
+    //                     : null,
+    //                 child: Padding(
+    //                   padding: EdgeInsetsDirectional.only(
+    //                       start: startPadding, end: 14.0),
+    //                   child: Row(
+    //                       mainAxisAlignment: MainAxisAlignment.end,
+    //                       children: headerWidgets),
+    //                 ),
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //       ),
+    //       Expanded(
+    //           flex: 8,
+    //           child: Scrollbar(
+    //               child: ListView(
+    //             shrinkWrap: true,
+    //             children: <Widget>[
+    //               SingleChildScrollView(
+    //                 scrollDirection: Axis.horizontal,
+    //                 child: DataTable(
+    //                   key: _tableKey,
+    //                   columns: columns,
+    //                   sortColumnIndex: sortColumnIndex,
+    //                   sortAscending: sortAscending,
+    //                   onSelectAll: onSelectAll,
+    //                   rows: _getRows(firstRowIndex, rowsPerPage),
+    //                   showCheckboxColumn: showCheckboxColumn,
+    //                 ),
+    //               ),
+    //             ],
+    //           ))),
+    //       DefaultTextStyle(
+    //         style: footerTextStyle,
+    //         child: IconTheme.merge(
+    //           data: const IconThemeData(opacity: 0.54),
+    //           child: Container(
+    //             height: 56.0,
+    //             child: SingleChildScrollView(
+    //               dragStartBehavior: dragStartBehavior,
+    //               scrollDirection: Axis.horizontal,
+    //               reverse: true,
+    //               child: Row(
+    //                 children: footerWidgets,
+    //               ),
+    //             ),
+    //           ),
+    //         ),
+    //       ),
+    //     ],
+    //   ),
+    // );
   }
 }
